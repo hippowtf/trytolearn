@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, FileSpreadsheet, Printer, Plus, X, Sparkles, Loader2, Copy, CalendarX, UserPlus, Trash2, Settings, LogOut, Lock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileSpreadsheet, Printer, Plus, X, Loader2, CalendarX, UserPlus, Trash2, Settings, LogOut, Lock } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -366,10 +366,16 @@ export default function App() {
     return { rows, grandTotalNOK: gN, grandTotalHours: gH };
   }, [currentDate, cancelledDates, makeups, lateCancels, students]);
 
-  const cleanSort = (a, b) => a.name.replace('*', '').trim().localeCompare(b.name.replace('*', '').trim());
+  const sortStudents = (a, b) => {
+    const dayA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek;
+    const dayB = b.dayOfWeek === 0 ? 7 : b.dayOfWeek;
+    if (dayA !== dayB) return dayA - dayB;
+    return a.name.replace('*', '').trim().localeCompare(b.name.replace('*', '').trim());
+  };
+
   const groupData = [
-    { label: 'Old Students', data: reportData.rows.filter(s => s.name.includes('*')).sort(cleanSort) },
-    { label: 'New Students', data: reportData.rows.filter(s => !s.name.includes('*')).sort(cleanSort) }
+    { label: 'Legacy Roster', data: reportData.rows.filter(s => s.name.includes('*')).sort(sortStudents) },
+    { label: 'Standard Roster', data: reportData.rows.filter(s => !s.name.includes('*')).sort(sortStudents) }
   ].map(g => ({ ...g, totalHours: g.data.reduce((a, b) => a + b.totalHours, 0), totalNOK: g.data.reduce((a, b) => a + b.subtotal, 0) }));
 
   const exportCSV = () => {
@@ -406,7 +412,7 @@ export default function App() {
             <div className="bg-indigo-600 p-3 rounded-2xl mb-4 shadow-lg shadow-indigo-100">
               <Lock className="text-white" size={32} />
             </div>
-            <h1 className="text-2xl font-bold text-slate-800">Cresc. Billing</h1>
+            <h1 className="text-2xl font-bold text-slate-800">Cresc.</h1>
             <p className="text-slate-500 text-sm mt-2 text-center">Please sign in to access the dashboard</p>
           </div>
           
@@ -536,6 +542,10 @@ export default function App() {
 
               <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg transition-all shadow-sm shadow-emerald-50 font-medium">
                 <FileSpreadsheet size={18} /> Sheet
+              </button>
+
+              <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg transition-all shadow-sm shadow-indigo-50 font-medium">
+                <Printer size={18} /> PDF
               </button>
               
               <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all group" title="Logout">
